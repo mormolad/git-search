@@ -56,6 +56,12 @@ const rows = [
   createData(11, 'Marshmallow', 'js', 5, 5, 'bbcbvxcxbvxc'),
   createData(12, 'Nougat', 'js', 5, 5, 'bbcbvxcxbvxc'),
   createData(13, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
+  createData(14, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
+  createData(15, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
+  createData(16, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
+  createData(17, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
+  createData(18, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
+  createData(19, 'Oreo', 'js', 5, 5, 'bbcbvxcxbvxc'),
 ];
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -351,15 +357,6 @@ export default function EnhancedTable() {
                     selected={isItemSelected}
                     sx={{ cursor: 'pointer' }}
                   >
-                    <TableCell
-                      component="th"
-                      id={labelId}
-                      scope="row"
-                      padding="none"
-                    >
-                      {row.name}
-                    </TableCell>
-
                     <TableCell align="right">{row.name}</TableCell>
                     <TableCell align="right">{row.language}</TableCell>
                     <TableCell align="right">{row.fork}</TableCell>
