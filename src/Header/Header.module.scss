@@ -1,0 +1,26 @@
+.header {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #00838f;
+  margin: 0 auto;
+  .container {
+    width: 1440px;
+    .form {
+      width: 1017px;
+      margin-left: 32px;
+      margin-right: auto;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+
+      .field {
+        background-color: #fff;
+        border-radius: 4px;
+        width: 912px;
+      }
+    }
+  }
+}

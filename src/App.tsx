@@ -1,12 +1,14 @@
 import * as React from 'react';
-import TextField from '@mui/material/TextField';
+import Header from './Header/Header';
+import Main from './Main/Main';
+import StoreProvider from './StoreProvider';
 
 function App() {
   return (
-    <>
-      <div>gefgegse</div>
-      <TextField id="outlined-basic" label="Outlined" variant="outlined" />
-    </>
+    <StoreProvider>
+      <Header />
+      <Main />
+    </StoreProvider>
   );
 }
 
