@@ -1,0 +1,15 @@
+.wellcome {
+  width: 100%;
+  height: calc(100vh - 90px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .title {
+    font-size: 46px;
+    font-weight: 400;
+    line-height: 65.78px;
+    letter-spacing: 0.17000000178813934px;
+    text-align: center;
+  }
+}

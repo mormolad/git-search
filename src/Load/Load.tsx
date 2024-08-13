@@ -1,4 +1,4 @@
-import load from '../../public/images/load.svg';
+import load from './load.svg';
 import style from './Load.module.scss';
 
 const Load = () => {

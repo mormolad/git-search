@@ -1,10 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import reduserLang from './searchSlics';
+import reduserSearch from './searchSlics';
 
 export const store = () => {
   return configureStore({
     reducer: {
-      reduserLang,
+      reduserSearch,
     },
   });
 };
