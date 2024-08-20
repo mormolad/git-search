@@ -14,65 +14,147 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import { visuallyHidden } from '@mui/utils';
 import { useSelector, useDispatch } from 'react-redux';
-import { setPage } from '../store/searchSlics';
-import { SearchRounded } from '@mui/icons-material';
 import style from './Table.module.scss';
+import {
+  setSearch,
+  setPerPage,
+  setPage,
+  setSortColum,
+} from '../store/searchSlics';
+import { setRepositoryInfo } from '../store/repositorySlice';
+import getSearch from '../store/apiSearch'; // Интерфейс для свойств компонента EnhancedTable
+interface EnhancedTableProps {
+  // Количество выбранных строк
+  numSelected: number;
+  // Функция, вызываемая при запросе сортировки
+  onRequestSort: (
+    event: React.MouseEvent<unknown>,
+    property: keyof Data
+  ) => void;
+  // Порядок сортировки (возрастающий или убывающий)
+  order: Order;
+  // Свойство, по которому производится сортировка
+  orderBy: string;
+  // Общее количество строк в таблице
+  rowCount: number;
+}
+
+// Интерфейс для свойств компонента EnhancedTableToolbar
+interface EnhancedTableToolbarProps {
+  // Количество выбранных строк
+  numSelected: number;
+}
+
+// Интерфейс для данных о репозитории
+interface Data {
+  // Уникальный идентификатор репозитория
+  id: number;
+  // Название репозитория
+  name: string;
+  // Язык программирования
+  language: string;
+  // Количество форков
+  forks: number;
+  // Количество звезд
+  stars: number;
+  // Дата создания репозитория
+  date: string;
+}
+
+// Интерфейс для данных о репозитории, полученных из API
+interface Repository {
+  // Уникальный идентификатор репозитория
+  id: number;
+  // Название репозитория
+  name: string;
+  // Язык программирования (может быть null)
+  language: string | null;
+  // Количество форков
+  forks: number;
+  // Количество звезд
+  stargazers_count: number;
+  // Дата создания репозитория (строка)
+  created_at: string;
+}
+
+// Тип для порядка сортировки
+type Order = 'asc' | 'desc';
+
+// Интерфейс для ячейки заголовка таблицы
+interface HeadCell {
+  // Флаг, указывающий, нужно ли отключить отступы
+  disablePadding: boolean;
+  // Ключ данных, по которому производится сортировка
+  id: keyof Data;
+  // Текст, отображаемый в заголовке
+  label: string;
+  // Флаг, указывающий, является ли ячейка числовой
+  numeric: boolean;
+}
+
+// Тип для данных о репозитории, используемых в компонентах
+type RepositoryData = {
+  // Уникальный идентификатор репозитория
+  id: number;
+  // Название репозитория
+  name: string;
+  // Язык программирования (может быть null)
+  language: string | null;
+  // Количество форков
+  forks: number;
+  // Количество звезд
+  stars: number;
+  // Дата создания репозитория
+  date: string;
+};
+
 export default function TableDone() {
-  interface Data {
-    id: number;
-    name: string;
-    language: string;
-    fork: number;
-    stars: number;
-    date: string;
-  }
+  // Хук для получения значения wordSearch из состояния Redux
+  const wordSearch = useSelector(
+    // Тип состояния Redux
+    (state: { reduserSearch: { wordSearch: string } }) =>
+      // Получение значения wordSearch из состояния
+      state.reduserSearch.wordSearch
+  );
 
-  function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-    if (b[orderBy] < a[orderBy]) {
-      return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-      return 1;
-    }
-    return 0;
-  }
+  // Хук для получения значения perPage из состояния Redux
+  const perPage = useSelector(
+    (state: { reduserSearch: { perPage: number } }) =>
+      state.reduserSearch.perPage
+  );
 
-  type Order = 'asc' | 'desc';
+  // Хук для получения значения quntityRepositories из состояния Redux
+  const quntityRepositories = useSelector(
+    (state: { reduserSearch: { quntityRepositories: number } }) =>
+      state.reduserSearch.quntityRepositories
+  );
 
-  function getComparator<Key extends keyof any>(
-    order: Order,
-    orderBy: Key
-  ): (
-    a: { [key in Key]: number | string },
-    b: { [key in Key]: number | string }
-  ) => number {
-    return order === 'desc'
-      ? (a, b) => descendingComparator(a, b, orderBy)
-      : (a, b) => -descendingComparator(a, b, orderBy);
-  }
+  // Хук для получения значения sortColum из состояния Redux
+  const sortColum = useSelector(
+    (state: { reduserSearch: { sortColum: number } }) =>
+      state.reduserSearch.sortColum
+  );
+  // Хук для получения значения page из состояния Redux
+  const page = useSelector(
+    (state: { reduserSearch: { page: any } }) => state.reduserSearch.page
+  );
+  // Хук для получения значения search из состояния Redux
+  const search = useSelector(
+    (state: { reduserSearch: { search: any } }) => state.reduserSearch.search
+  );
+  // Состояние для порядка сортировки
+  const [order, setOrder] = React.useState<Order>('asc');
 
-  function stableSort<T>(
-    array: readonly T[],
-    comparator: (a: T, b: T) => number
-  ) {
-    const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
-    stabilizedThis.sort((a, b) => {
-      const order = comparator(a[0], b[0]);
-      if (order !== 0) {
-        return order;
-      }
-      return a[1] - b[1];
-    });
-    return stabilizedThis.map((el) => el[0]);
-  }
+  // Состояние для свойства, по которому производится сортировка
+  const [orderBy, setOrderBy] = React.useState<keyof Data>('stars');
 
-  interface HeadCell {
-    disablePadding: boolean;
-    id: keyof Data;
-    label: string;
-    numeric: boolean;
-  }
+  // Хук для получения диспетчера действий Redux
+  const dispatch = useDispatch();
 
+  // Состояние для количества строк на странице
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
+  // Массив ячеек заголовка таблицы
   const headCells: readonly HeadCell[] = [
     {
       id: 'name',
@@ -87,7 +169,7 @@ export default function TableDone() {
       label: 'Язык',
     },
     {
-      id: 'fork',
+      id: 'forks',
       numeric: false,
       disablePadding: false,
       label: 'Число форков',
@@ -106,17 +188,78 @@ export default function TableDone() {
     },
   ];
 
-  interface EnhancedTableProps {
-    numSelected: number;
-    onRequestSort: (
-      event: React.MouseEvent<unknown>,
-      property: keyof Data
-    ) => void;
-    order: Order;
-    orderBy: string;
-    rowCount: number;
-  }
-
+  // Функция, вызываемая при запросе сортировки
+  const handleRequestSort = (
+    // Событие, вызвавшее запрос сортировки
+    event: React.MouseEvent<unknown>,
+    // Свойство, по которому производится сортировка
+    property: keyof Data
+  ) => {
+    // Функция getSearch с параметрами для поиска, сортировки, нужной страницы и порядка отображения запрашивает данные на Github API
+    getSearch(
+      'search/repositories?q=' +
+        wordSearch +
+        `&per_page=${perPage}&page=0&sort=${property}&order=${order}`
+    )
+      .then((res) => {
+        // Отправка действия для обновления данных в таблице
+        dispatch(setSearch(getDataTable(res.data.items)));
+        // Отправка действия для обновления номера страницы
+        dispatch(setPage(1));
+        // Отправка действия для обновления свойства, по которому производится сортировка
+        dispatch(setSortColum(property));
+      })
+      .catch((err) => console.log(err))
+      .finally(() => {
+        // Определение нового порядка сортировки
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        // Обновление свойства, по которому производится сортировка
+        setOrderBy(property);
+        // Сброс номера страницы
+        setPage(0);
+      });
+  };
+  //Функция, обрабатывающая изменение страницы в таблице.
+  const handleChangePage = (
+    event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number
+  ) => {
+    // Функция getSearch с параметрами для поиска, сортировки, нужной страници и порядка запрашивает данные на Github API
+    getSearch(
+      'search/repositories?q=' +
+        wordSearch +
+        `&per_page=${perPage}&page=${
+          newPage + 1
+        }&sort=${sortColum}&order=${order}`
+    )
+      .then((res) => {
+        dispatch(setSearch(getDataTable(res.data.items)));
+        dispatch(setPage(newPage + 1));
+      })
+      .catch((err) => console.log(err));
+  };
+  //Функция, обрабатывающая изменение количества строк на странице в таблице.
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    // Функция getSearch с параметрами для поиска, сортировки, нужной страници и порядка запрашивает данные на Github API
+    getSearch(
+      'search/repositories?q=' +
+        wordSearch +
+        `&per_page=${event.target.value}&page=${page}&sort=${sortColum}&order=${order}`
+    )
+      .then((res) => {
+        dispatch(setSearch(getDataTable(res.data.items)));
+        dispatch(setPerPage(parseInt(event.target.value, 10)));
+        dispatch(setPage(1));
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+      })
+      .catch((err) => console.log(err))
+      .finally(() => {});
+  };
+  // Компонент, отвечающий за отображение заголовка таблицы с возможностью сортировки.
   function EnhancedTableHead(props: EnhancedTableProps) {
     const { order, orderBy, onRequestSort } = props;
     const createSortHandler =
@@ -154,11 +297,7 @@ export default function TableDone() {
       </TableHead>
     );
   }
-
-  interface EnhancedTableToolbarProps {
-    numSelected: number;
-  }
-
+  //Компонент, отвечающий за отображение панели инструментов таблицы.
   function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
     const { numSelected } = props;
 
@@ -177,180 +316,96 @@ export default function TableDone() {
           }),
         }}
       >
-        {numSelected > 0 ? (
-          <Typography
-            sx={{ flex: '1 1 100%' }}
-            color="inherit"
-            variant="subtitle1"
-            component="div"
-          >
-            {numSelected} selected
-          </Typography>
-        ) : (
-          <Typography
-            sx={{
-              flex: '1 1 100%',
-              fontWeight: '400',
-              fontSize: '48px',
-            }}
-            variant="h6"
-            id="tableTitle"
-            component="div"
-          >
-            Результаты поиска
-          </Typography>
-        )}
+        <Typography
+          sx={{
+            flex: '1 1 100%',
+            fontWeight: '400',
+            fontSize: '48px',
+          }}
+          variant="h6"
+          id="tableTitle"
+          component="div"
+        >
+          Результаты поиска
+        </Typography>
       </Toolbar>
     );
   }
-  const [order, setOrder] = React.useState<Order>('asc');
-  const [orderBy, setOrderBy] = React.useState<keyof Data>('stars');
-  const [selected, setSelected] = React.useState<readonly number[]>([]);
-  const page = useSelector(
-    (state: { reduserSearch: { page: any } }) => state.reduserSearch.page
-  );
-  const dispatch = useDispatch();
-  const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const search = useSelector(
-    (state: { reduserSearch: { search: any } }) => state.reduserSearch.search
-  );
-
-  const rows = search;
-  console.log(search);
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: keyof Data
-  ) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly number[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1)
-      );
+  /** Функция, преобразующая данные о репозиториях в формат, используемый в таблице.
+   *  data - массив объектов, содержащих данные о репозиториях.
+   * returns - массив объектов, содержащих данные о репозиториях в формате, используемом в таблице.
+   */
+  function getDataTable(data: Repository[]) {
+    if (data.length > 0) {
+      return data.map((repository: Repository) => {
+        return {
+          id: repository.id,
+          name: repository.name,
+          language: repository.language,
+          forks: repository.forks,
+          stars: repository.stargazers_count,
+          date: new Date(repository.created_at).toLocaleString('ru-RU'),
+        };
+      });
     }
-    setSelected(newSelected);
-  };
-
-  const handleChangePage = (event: unknown, newPage: number) => {
-    dispatch(setPage(newPage));
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const isSelected = (id: number) => selected.indexOf(id) !== -1;
-
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-
-  const visibleRows = React.useMemo(
-    () =>
-      stableSort(rows, getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-      ),
-    [order, orderBy, page, rowsPerPage]
-  );
-  const idOfNumber = (id: number | string) => {
-    if (typeof id === 'string') {
-      return parseInt(id);
-    } else {
-      return id;
-    }
-  };
+    return [];
+  }
+  //Функция, обрабатывающая клик на репозитории в таблице.
+  function handleClick(id: number) {
+    getSearch(`repositories/${id}`)
+      .then((res) => {
+        console.log(res.data);
+        dispatch(setRepositoryInfo(res.data));
+      })
+      .catch((err) => console.log(err))
+      .finally(() => {});
+  }
 
   return (
-    <Box
-      sx={{
-        width: '960px',
-        margin: '40px auto auto 32px',
-        background: '#ffffff',
-      }}
-    >
-      <Paper
-        sx={{
-          width: '100%',
-          mb: 2,
-          boxShadow: 'none',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 'calc(100vh - 140px)',
-        }}
-      >
-        <EnhancedTableToolbar numSelected={selected.length} />
+    <Box className={style.box}>
+      <Paper className={style.paper}>
+        <EnhancedTableToolbar numSelected={0} />
         <TableContainer sx={{ flexGrow: '1' }}>
           <Table
-            sx={{ minWidth: 750 }}
+            sx={{ width: 912, marginLeft: 'auto', marginRight: '16px' }}
             aria-labelledby="tableTitle"
-            size={dense ? 'small' : 'medium'}
+            size={'medium'}
           >
             <EnhancedTableHead
-              numSelected={selected.length}
+              numSelected={0}
               order={order}
               orderBy={orderBy}
-              // onSelectAllClick={handleSelectAllClick}
               onRequestSort={handleRequestSort}
-              rowCount={rows.length}
+              rowCount={search.length}
             />
             <TableBody>
-              {visibleRows.map((row, index: number) => {
-                const isItemSelected = isSelected(idOfNumber(row.id));
+              {search.map((row: RepositoryData, index: number) => {
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleClick(event, idOfNumber(row.id))}
+                    onClick={() => handleClick(row.id)}
                     role="checkbox"
-                    aria-checked={isItemSelected}
                     tabIndex={-1}
                     key={row.id}
-                    selected={isItemSelected}
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell align="left">{row.name}</TableCell>
                     <TableCell align="left">{row.language}</TableCell>
-                    <TableCell align="left">{row.fork}</TableCell>
+                    <TableCell align="left">{row.forks}</TableCell>
                     <TableCell align="left">{row.stars}</TableCell>
                     <TableCell align="left">{row.date}</TableCell>
                   </TableRow>
                 );
               })}
-              {emptyRows > 0 && (
-                <TableRow
-                  style={{
-                    height: (dense ? 33 : 53) * emptyRows,
-                  }}
-                >
-                  <TableCell colSpan={6} />
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50, 100]}
           component="div"
-          count={rows.length}
+          count={quntityRepositories}
           rowsPerPage={rowsPerPage}
-          page={page}
+          page={page - 1}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           sx={{ marginTop: 'auto' }}

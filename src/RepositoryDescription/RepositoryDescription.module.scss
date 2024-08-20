@@ -1,3 +1,28 @@
-.repositoryDescription {
-  width: 460px;
+.container {
+  width: 436px;
+  padding-left: 24px;
+  background-color: #f2f2f2;
+  align-self: 'stretch';
+
+  .title {
+    margin: 24px auto 0 0;
+    font-size: 32px;
+    line-height: 40px;
+    text-align: left;
+    font-weight: 400;
+  }
+  .description {
+    margin: 16px auto 0 0;
+    font-size: 13px;
+    line-height: 18px;
+    letter-spacing: 0.1599999964237213px;
+    font-weight: 400;
+  }
+  .license {
+    margin: 24px auto 0 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20.02px;
+    letter-spacing: 0.17000000178813934px;
+  }
 }
